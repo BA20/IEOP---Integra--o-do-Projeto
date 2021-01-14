@@ -12,6 +12,72 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 const PORT = 3000;
 
+app.post("/getEncomenda", function(req,res){
+ const idencomenda = req.body.Produtos;
+ request(
+  {
+    url: "https://identity.primaverabss.com/core/connect/token",
+    method: "POST",
+    auth: {
+      user: "IE-PROJETO-GRUPO4",
+      pass: "95e020d8-40fe-4118-a704-b765af6cff75",
+    },
+    form: {
+      grant_type: "client_credentials",
+      scope: "application",
+    },
+  },
+  function (err, response) {
+    if (response) {
+      let json = JSON.parse(response.body);
+      let access_token = json.access_token;
+      let url =
+        "http://my.jasminsoftware.com/api/" +
+        user +
+        "/" +
+        subscription +
+        "/materialsCore/materialsItems/";
+
+      request(
+        {
+          url: url,
+          method: "GET",
+          headers: {
+            Authorization: `bearer ${access_token}`,
+            "Content-Type": "application/json",
+          },
+          form: {
+            scope: "application",
+          },
+        },
+        function (err, response) {
+          if (err) {
+            response.status(200).json({
+              status: false,
+              message: "Problemas!",
+            });
+            return;
+          }
+
+          let json = JSON.parse(response.body);
+
+          //ver o output do pedido
+          console.log(json);
+        }
+      );
+    } else {
+      res.status(200).json({
+        status: false,
+        message: "Ocorreu um erro ao fazer o pedido de autenticação",
+      });
+    }
+  }
+);
+
+})
+
+
+
 //Indicar que a api está a funcionar
 app.get("/", function (req, res) {
   res.status(200).json({
@@ -27,7 +93,7 @@ app.get("/chave", function (req, res) {
       method: "POST",
       auth: {
         user: "IE-PROJETO-GRUPO4",
-        pass: "24f9ddd6-ece3-4d9e-ba63-2ec1977bca01",
+        pass: "95e020d8-40fe-4118-a704-b765af6cff75",
       },
       form: {
         grant_type: "client_credentials",
@@ -57,7 +123,7 @@ app.get("/items", function (req, res) {
       method: "POST",
       auth: {
         user: "IE-PROJETO-GRUPO4",
-        pass: "24f9ddd6-ece3-4d9e-ba63-2ec1977bca01",
+        pass: "95e020d8-40fe-4118-a704-b765af6cff75",
       },
       form: {
         grant_type: "client_credentials",
@@ -100,6 +166,7 @@ app.get("/items", function (req, res) {
 
             //ver o output do pedido
             console.log(json);
+            res.send(json)
           }
         );
       } else {
@@ -123,15 +190,9 @@ app.get("/items", function (req, res) {
  */
 
 app.post("/verificarstock", function (req, resposta) {
-  /*if (typeof request.query.itemKey === "undefined") {
-        resposta.status(200).json({
-            status: false,
-            message: "Não existe este item!"
-        });
-        return;
-    }*/
-
-  let itemkey = req.params.itemKey;
+  
+  //let itemKey = req.params.itemKey;
+  //let quantidade = req.params.quantidade;
   //Pedir um acces token
   request(
     {
@@ -139,7 +200,7 @@ app.post("/verificarstock", function (req, resposta) {
       method: "POST",
       auth: {
         user: "IE-PROJETO-GRUPO4",
-        pass: "24f9ddd6-ece3-4d9e-ba63-2ec1977bca01",
+        pass: "95e020d8-40fe-4118-a704-b765af6cff75",
       },
       form: {
         grant_type: "client_credentials",
@@ -151,9 +212,14 @@ app.post("/verificarstock", function (req, resposta) {
         let json = JSON.parse(res.body);
         let access_token = json.access_token;
 
-        let qtd = req.body.quantidade;
-        console.log(qtd);
-        let url = `https://my.jasminsoftware.com/api/${user}/${subscription}/materialsCore/materialsItems/${req.query.itemKey}/`;
+        let quantidade = req.body.Produto.quantidade;
+        
+        qtd = quantidade;
+        id = req.body.Produto.itemkey;
+
+        let url = `https://my.jasminsoftware.com/api/${user}/${subscription}/materialsCore/materialsItems/${req.body.Produto.itemkey}/`;
+
+        console.log(url)
 
         request(
           {
@@ -179,15 +245,17 @@ app.post("/verificarstock", function (req, resposta) {
 
             console.log(res.body);
             let json = JSON.parse(res.body);
-
-            if (json.materialsItemWarehouses[0].stockBalance > -1) {
+            let preco = json.materialsItemWarehouses[0].calculatedUnitCost.amount
+            if (json.materialsItemWarehouses[0].stockBalance > quantidade) {
               console.log("Sucesso");
+              let total = (preco * quantidade)
               resposta.status(200).send({
-                message: true,
+                estado: true,
+                totalvenda: total 
               });
             } else {
               resposta.status(200).json({
-                status: false,
+                estado: false,
                 message: "Não existe esse item",
               });
             }
@@ -203,139 +271,11 @@ app.post("/verificarstock", function (req, resposta) {
   );
 });
 
-//POST CUSTOMER M
-/**
- *  Method: POST
- *  endpoint: /createcliente
- *  PARAMS:
- *      Nome Próprio
- *      endereço
- *      E-mail
- *      Telefone
- *      nif
- *
- *  retorno:
- *      status,
- *      message: id
- */
-
-app.post("/createcliente", function (request, resposta) {
-  if (typeof request.body.nome === "undefined") {
-    resposta.status(200).json({
-      status: false,
-      message: "é necessário porporcionar um nome",
-    });
-    return;
-  }
-
-  if (typeof request.body.data === "undefined") {
-    resposta.status(200).json({
-      status: false,
-      message: "É necessário porporcionar uma data",
-    });
-    return;
-  }
-
-  if (typeof request.body.email === "undefined") {
-    resposta.status(200).json({
-      status: false,
-      message: "É necessário porporcionar um endereço de email",
-    });
-    return;
-  }
-
-  if (typeof request.body.telefone === "undefined") {
-    resposta.status(200).json({
-      status: false,
-      message: "É necessário porporcionar um número telefónico",
-    });
-    return;
-  }
-
-  if (typeof request.body.nif === "undefined") {
-    resposta.status(200).json({
-      status: false,
-      message: "É necessário porporcionar um nif",
-    });
-    return;
-  }
-
-  request(
-    {
-      url: "https://identity.primaverabss.com/core/connect/token",
-      method: "POST",
-      auth: {
-        user: "IE-PROJETO-GRUPO4",
-        pass: "24f9ddd6-ece3-4d9e-ba63-2ec1977bca01",
-      },
-      form: {
-        grant_type: "client_credentials",
-        scope: "application",
-      },
-    },
-    function (err, res) {
-      if (res) {
-        //fazer o pedido de criaçao de cliente
-        let baseUrlCriarCliente = `http://my.jasminsoftware.com/api/${user}/${subscription}`;
-        let resourceCriarUtente = "/salesCore/customerParties";
-        let json = JSON.parse(res.body);
-        let access_token = json.access_token;
-        console.log(access_token);
-        let urlPedido = `${baseUrlCriarCliente + resourceCriarUtente}`;
-
-        request(
-          {
-            url: urlPedido,
-            method: "POST",
-            headers: {
-              Authorization: `bearer ${access_token}`,
-              "Content-Type": "application/json",
-            },
-            form: {
-              scope: "application",
-            },
-            data: {
-              name: request.body.nome,
-              isExternallyManaged: false,
-              currency: "EUR",
-              isPerson: true,
-              country: "PT",
-            },
-          },
-          function (err) {
-            if (err) {
-              resposta.status(200).json({
-                status: false,
-                message: "Ocorreu um erro ao fazer o pedido de autenticação",
-              });
-            } else {
-              resposta.status(200).json({
-                status: true,
-                message: "Cliente inserido",
-              });
-            }
-          }
-        );
-      } else {
-        resposta.status(200).json({
-          status: false,
-          message: "Ocorreu um erro ao fazer o pedido de autenticação",
-        });
-      }
-    }
-  );
-});
-
-//GET ESPECIALIDADE M
-/**
- * METHOD: GET
- * ENDPOINT: /getespecialidades
- * Filtrar por grupo
- * retorna uma lista com as especialidades
- *
- */
-
-app.get("/getespecialidades", function (request, resposta) {
+app.post("/CriarFatura", function (req, resposta) {
+ 
+  
+//  let itemKey = req.params.itemKey;
+  //let quantidade = req.params.quantidade;
   //Pedir um acces token
   request(
     {
@@ -343,7 +283,7 @@ app.get("/getespecialidades", function (request, resposta) {
       method: "POST",
       auth: {
         user: "IE-PROJETO-GRUPO4",
-        pass: "24f9ddd6-ece3-4d9e-ba63-2ec1977bca01",
+        pass: "95e020d8-40fe-4118-a704-b765af6cff75",
       },
       form: {
         grant_type: "client_credentials",
@@ -355,7 +295,12 @@ app.get("/getespecialidades", function (request, resposta) {
         let json = JSON.parse(res.body);
         let access_token = json.access_token;
 
-        let url = `http://my.jasminsoftware.com/api/243221/243221-0001/salescore/salesitems/odata?$filter=Description eq 'Consulta'`;
+        let quantidade = req.body.Produto.quantidade;
+        console.log(req.body)
+
+        let url = `https://my.jasminsoftware.com/api/${user}/${subscription}/materialsCore/materialsItems/${req.body.Produto.itemkey}/`;
+
+        console.log(url)
 
         request(
           {
@@ -369,31 +314,27 @@ app.get("/getespecialidades", function (request, resposta) {
               scope: "application",
             },
           },
+
           function (err, res) {
             if (err) {
               resposta.status(200).json({
                 status: false,
-                message: "Tenho problemas!",
+                message: "Tens de inserir um Itemkey",
               });
               return;
             }
 
+            console.log(res.body);
             let json = JSON.parse(res.body);
-
-            if (json.items.length > 0) {
-              let Arr = [];
-              json.items.forEach((item) =>
-                Arr.push(item.complementaryDescription)
-              );
+            if (json.materialsItemWarehouses[0].stockBalance > quantidade) {
               console.log("Sucesso");
-              resposta.status(200).json({
-                status: true,
-                message: Arr,
+              resposta.status(200).send({
+                estado: true,
               });
             } else {
               resposta.status(200).json({
-                status: false,
-                message: "Não existem especialidades!",
+                estado: false,
+                message: "Não existe esse item",
               });
             }
           }
@@ -407,18 +348,6 @@ app.get("/getespecialidades", function (request, resposta) {
     }
   );
 });
-
-//POST ENCOMENDA
-/**
- * METHOD: POST
- * ENDPOINT: /createencomenda
- *  PARAMS: idUtente, idEspecialidade/artigo
- *
- *  status: true
- *  status:
- *
- */
-app.post("/createencomenda", function (request) {});
 
 //Iniciar middleware
 app.listen(PORT, function () {
