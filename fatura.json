@@ -1,8 +1,8 @@
-
-  {
+{
     "Produto":[ {
       "itemkey": "",
       "quantidade":""
-      }]
+      }],
+      "total":"",
+      "cliente":"INDIF"  
   }
-

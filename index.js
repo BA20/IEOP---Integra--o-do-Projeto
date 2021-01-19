@@ -12,71 +12,32 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 const PORT = 3000;
 
-app.post("/getEncomenda", function(req,res){
- const idencomenda = req.body.Produtos;
- request(
-  {
-    url: "https://identity.primaverabss.com/core/connect/token",
-    method: "POST",
-    auth: {
-      user: "IE-PROJETO-GRUPO4",
-      pass: "95e020d8-40fe-4118-a704-b765af6cff75",
+app.post("/fatura", function (req, res) {
+  let json = JSON.parse(req.body.produtos);
+
+  console.log("Produtos do Bizagi:" + req.body.produtos);
+  /*
+if(json){
+  request(
+    {
+      url: "https://identity.primaverabss.com/core/connect/token",
+      method: "POST",
+      auth: {
+        user: "IE-PROJETO-GRUPO4",
+        pass: "95e020d8-40fe-4118-a704-b765af6cff75",
+      },
+      form: {
+        grant_type: "client_credentials",
+        scope: "application",
+      },
     },
-    form: {
-      grant_type: "client_credentials",
-      scope: "application",
-    },
-  },
-  function (err, response) {
-    if (response) {
-      let json = JSON.parse(response.body);
-      let access_token = json.access_token;
-      let url =
-        "http://my.jasminsoftware.com/api/" +
-        user +
-        "/" +
-        subscription +
-        "/materialsCore/materialsItems/";
+    function(pedido,resposta){
 
-      request(
-        {
-          url: url,
-          method: "GET",
-          headers: {
-            Authorization: `bearer ${access_token}`,
-            "Content-Type": "application/json",
-          },
-          form: {
-            scope: "application",
-          },
-        },
-        function (err, response) {
-          if (err) {
-            response.status(200).json({
-              status: false,
-              message: "Problemas!",
-            });
-            return;
-          }
-
-          let json = JSON.parse(response.body);
-
-          //ver o output do pedido
-          console.log(json);
-        }
-      );
-    } else {
-      res.status(200).json({
-        status: false,
-        message: "Ocorreu um erro ao fazer o pedido de autenticação",
-      });
     }
-  }
-);
+  });
 
-})
-
-
+*/
+});
 
 //Indicar que a api está a funcionar
 app.get("/", function (req, res) {
@@ -166,7 +127,7 @@ app.get("/items", function (req, res) {
 
             //ver o output do pedido
             console.log(json);
-            res.send(json)
+            res.send(json);
           }
         );
       } else {
@@ -190,7 +151,6 @@ app.get("/items", function (req, res) {
  */
 
 app.post("/verificarstock", function (req, resposta) {
-  
   //let itemKey = req.params.itemKey;
   //let quantidade = req.params.quantidade;
   //Pedir um acces token
@@ -209,72 +169,84 @@ app.post("/verificarstock", function (req, resposta) {
     },
     function (err, res) {
       if (res) {
-        let json = JSON.parse(res.body);
-        let access_token = json.access_token;
-
-        let quantidade = req.body.Produto.quantidade;
-        
-        qtd = quantidade;
-        id = req.body.Produto.itemkey;
-
-        let url = `https://my.jasminsoftware.com/api/${user}/${subscription}/materialsCore/materialsItems/${req.body.Produto.itemkey}/`;
-
-        console.log(url)
-
-        request(
-          {
-            url: url,
-            method: "GET",
-            headers: {
-              Authorization: `bearer ${access_token}`,
-              "Content-Type": "application/json",
-            },
-            form: {
-              scope: "application",
-            },
-          },
-
-          function (err, res) {
-            if (err) {
-              resposta.status(200).json({
-                status: false,
-                message: "Tens de inserir um Itemkey",
-              });
-              return;
-            }
-
-            console.log(res.body);
-            let json = JSON.parse(res.body);
-            let preco = json.materialsItemWarehouses[0].calculatedUnitCost.amount
-            if (json.materialsItemWarehouses[0].stockBalance > quantidade) {
-              console.log("Sucesso");
-              let total = (preco * quantidade)
-              resposta.status(200).send({
-                estado: true,
-                totalvenda: total 
-              });
-            } else {
-              resposta.status(200).json({
-                estado: false,
-                message: "Não existe esse item",
-              });
-            }
-          }
-        );
-      } else {
-        resposta.status(200).json({
-          status: false,
-          message: "Ocorreu um erro ao fazer o pedido de autenticação",
+        PedidoJasmine(res, req).then((kikw) => {
+          console.log(kikw)
+          resposta.status(200).send({
+            estado: true,
+            totalvenda: kikw,
+          });
+          
         });
       }
     }
   );
+
+  async function PedidoJasmine(res, req) {
+    return await new Promise((resolve, reject) => {
+      let json = JSON.parse(res.body);
+      console.log(req.body);
+      let access_token = json.access_token;
+
+      var tamanho = Object.keys(req.body.Produto).length;
+
+      var array = [];
+
+      for (var i = 0; i < tamanho; i++) {
+        var promise = new Promise((resolve, reject) => {
+          var subtotal;
+          var quantidad = req.body.Produto[i].quantidade;
+          console.log(quantidad);
+          let url = `https://my.jasminsoftware.com/api/${user}/${subscription}/materialsCore/materialsItems/${req.body.Produto[i].itemkey}/`;
+          console.log(url);
+          
+          request(
+            {
+              url: url,
+              method: "GET",
+              headers: {
+                Authorization: `bearer ${access_token}`,
+                "Content-Type": "application/json",
+              },
+              form: {
+                scope: "application",
+              },
+            },
+             (err, res) =>{
+
+              if (err) {
+                reject("gg");
+              }
+              
+              let json = JSON.parse(res.body);
+              let preco = json.materialsItemWarehouses[0].calculatedUnitCost.amount;
+
+
+              if (json.materialsItemWarehouses[0].stockBalance > quantidad){
+                subtotal = parseFloat(preco) * parseInt(quantidad);
+                console.log(subtotal);
+                resolve(subtotal);
+              }else{
+                reject("gg");
+              }
+            }
+          );
+        });
+        array.push(promise);
+      }
+      var total = 0;
+      Promise.all(array).then((value) => {
+        console.log("VALUE:", value);
+        value.forEach((valor) => {
+          total = (parseFloat(total)) + (parseFloat(valor));
+        });
+        resolve(total);
+      });
+    });
+  }
 });
 
 app.post("/CriarFatura", function (req, resposta) {
- 
-  
-//  let itemKey = req.params.itemKey;
+  //  let itemKey = req.params.itemKey;
   //let quantidade = req.params.quantidade;
   //Pedir um acces token
   request(
@@ -296,11 +268,11 @@ app.post("/CriarFatura", function (req, resposta) {
         let access_token = json.access_token;
 
         let quantidade = req.body.Produto.quantidade;
-        console.log(req.body)
+        console.log(req.body);
 
         let url = `https://my.jasminsoftware.com/api/${user}/${subscription}/materialsCore/materialsItems/${req.body.Produto.itemkey}/`;
 
-        console.log(url)
+        console.log(url);
 
         request(
           {
