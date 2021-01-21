@@ -18,7 +18,7 @@ app.post("/fatura", function (req, res) {
   console.log("ENTREI")
   console.log(req.body)
   const USER_TOKEN =
-    "eyJhbGciOiJSUzI1NiIsImtpZCI6IkFEM0Q1RDJERjM4OTZBMDUwMzYwNzVDQkNFNDc0RDJBMjI4MUVCM0UiLCJ0eXAiOiJKV1QiLCJ4NXQiOiJyVDFkTGZPSmFnVURZSFhMemtkTktpS0I2ejQifQ.eyJuYmYiOjE2MTExNzcwOTUsImV4cCI6MTYxMTE5MTQ5NSwiaXNzIjoiaHR0cHM6Ly9pZGVudGl0eS5wcmltYXZlcmFic3MuY29tIiwiYXVkIjpbImh0dHBzOi8vaWRlbnRpdHkucHJpbWF2ZXJhYnNzLmNvbS9yZXNvdXJjZXMiLCJqYXNtaW4iXSwiY2xpZW50X2lkIjoiSUUtUFJPSkVUTy1HUlVQTzQiLCJzY29wZSI6WyJhcHBsaWNhdGlvbiJdfQ.NqVroWW3fiPTp3YNnBME2LwdPo8x8bqFc7N63EuDAzjm7wxomKqdb4M4CF1wOR7pndGHrmcHojG_hN4CTtGJsgSjrnbJu5amRu0ESNXInqtB4Qm6vH6ciUsq4bCGAXl9O1Oju6y_30yJAi83AZ861HMHUg0rJxXAPWizV24cG2jz8c38UROrJ8mvbHCc-16LM9fdihHE0F1bDaWrqQV0vcsQ7pFvnO-LeoAZfAcxlgra5g4MAf_M7e14969ATkFC3V7uQlrb8R2IJgDDXrKlYgzjuuI__-Bm0BPcrtckXeQNsc4zJjW89Qkzhi8ckHYc49Oac8yRM1uKJTQYVvpwwQ";
+    "eyJhbGciOiJSUzI1NiIsImtpZCI6IkFEM0Q1RDJERjM4OTZBMDUwMzYwNzVDQkNFNDc0RDJBMjI4MUVCM0UiLCJ0eXAiOiJKV1QiLCJ4NXQiOiJyVDFkTGZPSmFnVURZSFhMemtkTktpS0I2ejQifQ.eyJuYmYiOjE2MTEyMzU2MjMsImV4cCI6MTYxMTI1MDAyMywiaXNzIjoiaHR0cHM6Ly9pZGVudGl0eS5wcmltYXZlcmFic3MuY29tIiwiYXVkIjpbImh0dHBzOi8vaWRlbnRpdHkucHJpbWF2ZXJhYnNzLmNvbS9yZXNvdXJjZXMiLCJqYXNtaW4iXSwiY2xpZW50X2lkIjoiSUUtUFJPSkVUTy1HUlVQTzQiLCJzY29wZSI6WyJhcHBsaWNhdGlvbiJdfQ.fA6q_a6Xm5oC27wg-PSHN5PfqQaXVboNnxFDwcO0m1YkoG3OXbsb91KcWT2qruUP28KHorNk-2cegm8KXM3UMSKrs-bWq8vLswzHVgAo8r_eMC4I69UNYwuh7-W84MumDyCHZfxOxfHI-O2AdBuKJPgZcH6s9U9LDFk77kEQ9r8u5eJMYwuKGC1Z1BSalzUGO6b2YPFjlI_qVbsREhzxyURvOe1ZixGnzqLlYFhjSOuFX1ff9tMJWyNTnMAkHH9ojyFKkYZxBA7IhfPZmdsg7kc42gxLENndft3w059RUW3dj_oKNdF_oEnsmyw5W9ow3p32MvDE5377EQBbdc0fNQ";
   /*request(
     {
       url: "https://identity.primaverabss.com/core/connect/token",
@@ -43,83 +43,99 @@ app.post("/fatura", function (req, res) {
 
   var tamanho = Object.keys(req.body.Produto).length;
 
-  var arrayItens = [];
-  var arrayQuantidade = [];
-
   var produtos = []
-  request(
-    {
-      url: "https://my.jasminsoftware.com/api/247212/247212-0001/salesCore/salesItems",
-      method: "get",
-      headers: {
-        Authorization: AuthStr,
-        "Content-Type": "application/json",
-      },
-      form: {
-        scope: "application",
-      },
-    },
-    (err, res) => {
-      if (err) {
-        reject("gg");
+
+
+    PedidoJasmine(AuthStr, req).then((kikw) => {
+      for (var i = 0; i < tamanho; i++) {
+        var preco = kikw[i]
+        produtos.push({
+          salesItem:req.body.Produto[i].itemkey,
+          quantity:req.body.Produto[i].quantidade,
+          unitPrice:{
+            amount: preco
+          }
+        })
       }
 
-      console.log("MASSAAAAAAAAAAAAAAAAAAAAAAAA",res.body)
-      /*let json = JSON.parse(res.body);
-      let preco =
-        json.materialsItemWarehouses[0].calculatedUnitCost.amount;
-
-      if (json.materialsItemWarehouses[0].stockBalance > quantidad) {
-        subtotal = parseFloat(preco) * parseInt(quantidad);
-        console.log(subtotal);
-        resolve(subtotal);
-      } else {
-        reject("gg");
-      }*/
-    }
-  );
-
-  for (var i = 0; i < tamanho; i++) {
-    arrayItens.push(req.body.Produto[i].itemkey);
-    arrayQuantidade.push(req.body.Produto[i].quantidade);
-
-  }
-
-  var total = req.body.total;
-  console.log(arrayItens, arrayQuantidade, total);
-
-  /*var rodrigay = [
-    {
-      salesItem: "ARROZ",
-      quantity: "2",
-  
-    },
-    {
-      salesItem: "MASSA",
-      quantity: "3",
-
-    },
-  ]
-  var dados = {
-    buyerCustomerParty: req.body.cliente,
-    documentLines: 
-      rodrigay,
+      var dados = {
+        emailTo:req.body.email,
+        buyerCustomerParty: "INDIF",
+        documentLines: 
+          produtos,
+      };
       
-
-  };*/
-
-  var jasminLink =
-    "https://my.jasminsoftware.com/api/247212/247212-0001/billing/invoices";
-
-  axios
-    .post(jasminLink, dados, { headers: { Authorization: AuthStr } })
-    .then((response) => {
-      console.log("GG FEITO");
-    })
-    .catch((error) => {
-      console.log("AZEDOU MARMITA");
-      console.log(error);
+      console.log("DADOSSSSSSSSSSSSSSSSSSSSSSSSSS",dados)
+    var jasminLink =
+      "https://my.jasminsoftware.com/api/247212/247212-0001/billing/invoices";
+  
+    axios
+      .post(jasminLink, dados, { headers: { Authorization: AuthStr } })
+      .then((response) => {
+        res.status(200).send({
+          done: true,
+        });
+        console.log("GG FEITO");
+      })
+      .catch((error) => {
+        console.log("AZEDOU MARMITA");
+        console.log(error);
+      });
+  
+  
     });
+
+
+ 
+
+
+    async function PedidoJasmine(AuthStr, req) {
+      return await new Promise((resolve, reject) => {
+        console.log(req.body);
+      
+        var tamanho = Object.keys(req.body.Produto).length;
+  
+        var array = [];
+  
+        for (var i = 0; i < tamanho; i++) {
+          var promise = new Promise((resolve, reject) => {
+            let url = `https://my.jasminsoftware.com/api/247212/247212-0001/salesCore/salesItems/${req.body.Produto[i].itemkey}/`;
+            console.log(url);
+  
+            request(
+              {
+                url: url,
+                method: "GET",
+                headers: {
+                  Authorization: AuthStr,
+                  "Content-Type": "application/json",
+                },
+                form: {
+                  scope: "application",
+                },
+              },
+              (err, res) => {
+                if (err) {
+                  reject("gg3");
+                }
+                let json = JSON.parse(res.body);
+                let preco = json.priceListLines[0].priceAmount.amount;
+                resolve(preco);
+              }
+            );
+          });
+          array.push(promise);
+        }
+        var total = [];
+        Promise.all(array).then((value) => {
+          console.log("VALUE:", value);
+          value.forEach((valor) => {
+            total.push(valor)
+          });
+          resolve(total);
+        });
+      });
+    }
 });
 
 //Indicar que a api está a funcionar
@@ -295,7 +311,7 @@ app.post("/verificarstock", function (req, resposta) {
             },
             (err, res) => {
               if (err) {
-                reject("gg");
+                reject("gg1");
               }
 
               let json = JSON.parse(res.body);
@@ -307,7 +323,7 @@ app.post("/verificarstock", function (req, resposta) {
                 console.log(subtotal);
                 resolve(subtotal);
               } else {
-                reject("gg");
+                reject("gg2");
               }
             }
           );
@@ -320,6 +336,7 @@ app.post("/verificarstock", function (req, resposta) {
         value.forEach((valor) => {
           total = parseFloat(total) + parseFloat(valor);
         });
+        total = parseFloat(total * 1.23)
         resolve(total);
       });
     });
