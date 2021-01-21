@@ -46,20 +46,19 @@ app.post("/fatura", function (req, res) {
   var produtos = []
 
 
-    PedidoJasmine(AuthStr, req).then((kikw) => {
+    //PedidoJasmine(AuthStr, req).then((kikw) => {
       for (var i = 0; i < tamanho; i++) {
-        var preco = kikw[i]
+       // var preco = kikw[i]
         produtos.push({
           salesItem:req.body.Produto[i].itemkey,
           quantity:req.body.Produto[i].quantidade,
-          unitPrice:{
-            amount: preco
-          }
+
         })
       }
 
       var dados = {
         emailTo:req.body.email,
+        eletronicMail:req.body.email,
         buyerCustomerParty: "INDIF",
         documentLines: 
           produtos,
@@ -83,7 +82,7 @@ app.post("/fatura", function (req, res) {
       });
   
   
-    });
+    //});
 
 
  
@@ -274,6 +273,14 @@ app.post("/verificarstock", function (req, resposta) {
             estado: true,
             totalvenda: kikw,
           });
+        }).catch(err =>{
+          if(err == 0){
+            resposta.status(200).send({
+              estado: false,
+              totalvenda: 0,
+            });
+          }
+
         });
       }
     }
@@ -338,6 +345,9 @@ app.post("/verificarstock", function (req, resposta) {
         });
         total = parseFloat(total * 1.23)
         resolve(total);
+      }).catch((error) =>{
+        console.log("ENTREI NO REJECT")
+         reject(0)
       });
     });
   }
